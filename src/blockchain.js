@@ -190,7 +190,10 @@ class Blockchain {
             .then((blocskData => blocskData.reduce((acc, data) => {
                 console.log(data);
                 if(data.address === address) {
-                    acc.push(data.star);
+                    acc.push({
+                        owner: data.address,
+                        star: data.star
+                    });
                 }
                 return acc;
             }, [])));
@@ -203,7 +206,7 @@ class Blockchain {
      * 2. Each Block should check the with the previousBlockHash
      */
     validateChain() {
-        const chain = thisc.hain;
+        const chain = this.chain;
         return Promise.all(chain.map(b => b.validate()))
             .then((validations) => {
                 let lastHash = null;
