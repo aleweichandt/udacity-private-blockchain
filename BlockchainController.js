@@ -80,7 +80,7 @@ class BlockchainController {
 
     // This endpoint allows you to retrieve the block by hash (GET endpoint)
     getBlockByHash() {
-        this.app.get("/block/:hash", async (req, res) => {
+        this.app.get("/blocks/:hash", async (req, res) => {
             if(req.params.hash) {
                 const hash = req.params.hash;
                 let block = await this.blockchain.getBlockByHash(hash);
@@ -98,7 +98,7 @@ class BlockchainController {
 
     // This endpoint allows you to request the list of Stars registered by an owner
     getStarsByOwner() {
-        this.app.get("/blocks/:address", async (req, res) => {
+        this.app.get("/stars/:address", async (req, res) => {
             if(req.params.address) {
                 const address = req.params.address;
                 try {
