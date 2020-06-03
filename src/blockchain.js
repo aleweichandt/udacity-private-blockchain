@@ -62,9 +62,24 @@ class Blockchain {
      * that this method is a private method. 
      */
     _addBlock(block) {
-        let self = this;
+        const self = this;
         return new Promise(async (resolve, reject) => {
-           
+            try {
+                //get last block in chain
+                const lastBlock = self.height >= 0 ? self.chain[self.height] : null;
+                const prevHash = lastBlock != null ? lastBlock.hash : null;
+                //update block
+                block.height = self.height + 1;
+                block.time = new Date().getTime().toString().slice(0,-3);
+                block.previousBlockHash = prevHash;
+                // set hash
+                block.hash = SHA256(JSON.stringify(block)).toString();
+                self.chain.push(block);
+                self.height += 1;
+                resolve(block);
+            } catch(err) {
+                reject(err);
+            }
         });
     }
 
@@ -78,7 +93,9 @@ class Blockchain {
      */
     requestMessageOwnershipVerification(address) {
         return new Promise((resolve) => {
-            
+            const time = new Date().getTime().toString().slice(0,-3);
+            const message = `${address}:${time}:starRegistry`
+            resolve(message)
         });
     }
 
@@ -101,8 +118,25 @@ class Blockchain {
      */
     submitStar(address, message, signature, star) {
         let self = this;
-        return new Promise(async (resolve, reject) => {
-            
+        return new Promise((resolve, reject) => {
+            //check time
+            const signTime = parseInt(message.split(':')[1]);
+            const time = parseInt(new Date().getTime().toString().slice(0,-3));
+            if(300 < time - signTime) {
+                reject("signature has expired");
+            }
+            //check signature
+            const verified = bitcoinMessage.verify(message, address, signature);
+            if(!verified) {
+                reject("invalid signature");
+            }
+            //everything ok, create block
+            const rawBlock = new BlockClass.Block({
+                address,
+                signature,
+                star
+            });
+            resolve(this._addBlock(rawBlock));
         });
     }
 
@@ -113,9 +147,14 @@ class Blockchain {
      * @param {*} hash 
      */
     getBlockByHash(hash) {
-        let self = this;
+        const self = this;
         return new Promise((resolve, reject) => {
-           
+            const block = self.chain.filter(p => p.hash === hash)[0];
+            if(block){
+                resolve(block);
+            } else {
+                resolve(null);
+            }
         });
     }
 
@@ -144,10 +183,15 @@ class Blockchain {
      */
     getStarsByWalletAddress (address) {
         let self = this;
-        let stars = [];
-        return new Promise((resolve, reject) => {
-            
-        });
+        const [genesis, ...blocks] = this.chain;
+        return Promise.all(blocks.map(b => b.getBData()))
+            .then((blocskData => blocskData.reduce((acc, data) => {
+                console.log(data);
+                if(data.address === address) {
+                    acc.push(data.star);
+                }
+                return acc;
+            }, [])));
     }
 
     /**
@@ -157,11 +201,20 @@ class Blockchain {
      * 2. Each Block should check the with the previousBlockHash
      */
     validateChain() {
-        let self = this;
-        let errorLog = [];
-        return new Promise(async (resolve, reject) => {
-            
-        });
+        const chain = thisc.hain;
+        return Promise.all(chain.map(b => b.validate()))
+            .then((validations) => {
+                let lastHash = null;
+                return chain.reduce((acc, block, i) => {
+                    const isValidBlock = validations[i];
+                    const validHash = lastHash === block.previousBlockHash;
+                    if(!isValidBlock || !validHash) {
+                        acc.push(block.hash);
+                    }
+                    lastHash = block.hash;
+                    return acc;
+                }, []);
+            });
     }
 
 }
