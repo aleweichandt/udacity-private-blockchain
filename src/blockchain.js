@@ -33,11 +33,13 @@ class Blockchain {
      * You should use the `addBlock(block)` to create the Genesis Block
      * Passing as a data `{data: 'Genesis Block'}`
      */
-    async initializeChain() {
-        if( this.height === -1){
-            let block = new BlockClass.Block({data: 'Genesis Block'});
-            await this._addBlock(block);
-        }
+    initializeChain() {
+        return new Promise((resolve, reject) => {
+            if( this.height === -1){
+                let block = new BlockClass.Block({data: 'Genesis Block'});
+                resolve(this._addBlock(block));
+            }
+        })
     }
 
     /**
@@ -63,7 +65,7 @@ class Blockchain {
      */
     _addBlock(block) {
         const self = this;
-        return new Promise(async (resolve, reject) => {
+        return new Promise((resolve, reject) => {
             try {
                 //get last block in chain
                 const lastBlock = self.height >= 0 ? self.chain[self.height] : null;
